@@ -1,0 +1,129 @@
+import os
+import win32com.client
+import openpyxl
+import random
+from openpyxl import *
+import re
+import time
+#import ReadExcel
+import scipy
+import numpy
+from scipy.stats import norm
+import datetime
+import matplotlib.pyplot as plt
+
+class Displacement:
+    def __init__(self, nodes = [], disp=1):
+        self.nodes = nodes
+        self.disp = disp
+
+def write_to_excel(wb,all_disp,save_loc):
+    print('Writing all results to Excel...')
+    filepath = save_loc + '/Results.xlsx'
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws['A1'] = 'Floor #'
+    ws['B1'] = 'Disp 1x'
+    ws['C1'] = 'Disp 1y'
+    ws['D1'] = 'Disp 2x'
+    ws['E1'] = 'Disp 2y'
+    ws['F1'] = 'Disp 3x'
+    ws['G1'] = 'Disp 3y'
+
+def add_point_load(SapModel,floor_elev,y_cord):
+    print('Adding point load...')
+    #Create the load node point
+    [ret, mass_name] = SapModel.PointObj.AddCartesian(0,y_cord,floor_elev,MergeOff=False)
+    if ret != 0:
+        print('ERROR setting mass nodes on floor')
+    #Assign masses to the mass nodes
+    #Shaking in the x direcion!
+    N_m_C = 10
+    SapModel.SetPresentUnits(N_m_C)
+    mass_per_node = 0.2
+    ret = SapModel.PointObj.SetLoadForce(mass_name, 'DEAD', [0, 0, -1 * mass_per_node * 9.81, 0, 0, 0])
+    if ret[0] != 0:
+        print('ERROR setting load on floor') # + str(floor_num)
+
+    return SapModel
+
+def get_displacement(SapModel,floor_elev):
+    #Get joint displacement
+    #Set units to millimetres
+    N_mm_C = 9
+    SapModel.SetPresentUnits(N_mm_C)
+    #Find the desired corner nodes 
+    [ret, number_nodes, all_node_names] = SapModel.PointObj.GetNameList()
+    x = 0
+    y = 0
+    z = 0
+    node_1 = '1'
+    node_2 = '2'
+    node_3 = '3'
+
+    for node_name in all_node_names:
+        [ret, x, y, z] = SapModel.PointObj.GetCoordCartesian(node_name, 0, 0, 0)
+        if x == 4.5 and y == 0 and z == floor_elev:
+            node_1 = node_name
+        if x == 12 and y == 7.5 and z == floor_elev:
+            node_2 = node_name
+        if x == 12 and y == 12 and z == floor_elev:
+            node_3 = node_name
+#Find displacement for node 1
+    ret = SapModel.Results.JointDispl(node_1, 0)
+    max_and_min_disp = ret[7]
+    max_pos_disp = max_and_min_disp[0]
+    min_neg_disp = max_and_min_disp[1]
+    if abs(max_pos_disp) >= abs(min_neg_disp):
+        max_drift_1 = abs(max_pos_acc)
+    elif abs(min_neg_disp) >= abs(max_pos_disp):
+        max_drift_1 = abs(min_neg_disp)
+    else:
+        print('Could not find max drift for node 1')
+#Find displacement for node 2
+    ret = SapModel.Results.JointDispl(node_2, 0)
+    max_and_min_disp = ret[7]
+    max_pos_disp = max_and_min_disp[0]
+    min_neg_disp = max_and_min_disp[1]
+    if abs(max_pos_disp) >= abs(min_neg_disp):
+        max_drift_2 = abs(max_pos_acc)
+    elif abs(min_neg_disp) >= abs(max_pos_disp):
+        max_drift_2 = abs(min_neg_disp)
+    else:
+        print('Could not find max drift for node 2')
+#Find displacement for node 3
+    ret = SapModel.Results.JointDispl(node_3, 0)
+    max_and_min_disp = ret[7]
+    max_pos_disp = max_and_min_disp[0]
+    min_neg_disp = max_and_min_disp[1]
+    if abs(max_pos_disp) >= abs(min_neg_disp):
+        max_drift_3 = abs(max_pos_acc)
+    elif abs(min_neg_disp) >= abs(max_pos_disp):
+        max_drift_3 = abs(min_neg_disp)
+    else:
+        print('Could not find max drift for node 3')
+
+
+
+        
+
+print('\n--------------------------------------------------------')
+print('Centre of Rigidity Finder by University of Toronto Seismic Design Team')
+print('--------------------------------------------------------\n')
+
+print('\nInitializing SAP2000 model...')
+# create SAP2000 object
+SapObject = win32com.client.Dispatch('SAP2000v15.SapObject')
+# start SAP2000
+SapObject.ApplicationStart()
+# create SapModel Object
+SapModel = SapObject.SapModel
+# initialize model
+SapModel.InitializeNewModel()
+# open existing file
+#CHANGE THE FILENAME TO THE PATH OF YOUR TOWER
+FileName = "C:\Check Cr\Tower 1.sdb"
+ret = SapModel.File.OpenFile(FileName)
+#set imperial units for location of point force
+kip_in_F = 3
+SapModel.SetPresentUnits(kip_in_F)
