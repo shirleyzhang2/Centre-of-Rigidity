@@ -77,14 +77,14 @@ SapModel = SapObject.SapModel # create SapModel Object
 SapModel.InitializeNewModel() # initialize model
 
 # CHANGE THE FILENAME TO THE PATH OF YOUR TOWER
-FileName = "C:\Check Cr\Tower 108 Softened with Diaphragm.sdb"
+FileName = "C:\Check Cr\Maher.sdb"
 path='C:/Users/shirl/OneDrive - University of Toronto/Desktop/Seismic/Centre of Rigidity/Centre of Rigidity/temp.xlsx'
 wb = load_workbook(path)
 ret = SapModel.File.OpenFile(FileName) 
 SapModel.SetPresentUnits(kip_in_F) #set imperial units for location of point force
 
 #Variable initialization
-floor_elev = [15.0,57.0] #[21.0,27.0,33.0,39.0,45.0,51.0,57.0] #change this list for total number of floors analyzed
+floor_elev = [57.0] #[15.0,21.0,27.0,33.0,39.0,45.0,51.0,57.0] #change this list for total number of floors analyzed
 cur_floor_num = 0
 all_floors = []
 mass_name = None
@@ -92,9 +92,9 @@ mass_name = None
 while cur_floor_num < len(floor_elev):
     all_nodes = {}
     cur_elev = floor_elev[cur_floor_num]
-    y_cord = 5.0
+    y_cord = 0.0
 
-    while y_cord <= 10.0:
+    while y_cord <= 12.0:
         ret = SapModel.SetModelIsLocked(False) # Ensure unlocked
         print('Deleting and adding point load...')
         if mass_name is not None:
@@ -120,7 +120,7 @@ while cur_floor_num < len(floor_elev):
         
         all_nodes[y_cord] = get_displacement(SapModel,cur_elev)
        
-        y_cord += 0.2 #Change this value for accuracy i.e. number of loads on each floor
+        y_cord += 0.5 #Change this value for accuracy i.e. number of loads on each floor
     all_floors.append(all_nodes)
     cur_floor_num += 1 
 
